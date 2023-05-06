@@ -2,6 +2,7 @@ import torch
 import pandas as pd
 import paths
 import os
+import cv2
 
 
 class ImagesDataset(torch.utils.data.Dataset):
@@ -115,9 +116,21 @@ class ImagesDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # Apply transforms and other augmentation here
+        if self.transforms is None:
+            result = {
+                "drone_image": cv2.resize(cv2.imread(self.items[idx]["drone_image"]), (500, 500)),
+                "satellite_image": cv2.imread(self.items[idx]["zoomed_in"]["image"]),
+                "satellite_image_contains_drone_image": True,
+                "drone_on_satellite_coordinates": {
+                    "x": 640,
+                    "y": 640
+                }
+            }
+        else:
+            raise Exception("Transforms are not implemented yet")
 
         # Should return
         #   1. Drone image
         #   2. Satellite image
         #   3. Coordinates of center of drone image on satellite image
-        return self.items[idx]
+        return result
