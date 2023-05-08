@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import random
 from PIL import Image
-
+import torchvision
 
 def zoomAndOffset(image, point, zoom_factor):
     point_on_original_image_x = point[0]
@@ -20,8 +20,15 @@ def zoomAndOffset(image, point, zoom_factor):
     width_delta = width - new_width
     height_delta = height - new_height
 
-    x_shift_offset = random.randrange(int(-width_delta / 2), int(width_delta / 2))
-    y_shift_offset = random.randrange(int(-height_delta / 2), int(height_delta / 2))
+    if width_delta < 2:
+        x_shift_offset = 0
+    else:
+        x_shift_offset = random.randrange(int(-width_delta / 2), int(width_delta / 2))
+
+    if height_delta < 2:
+        y_shift_offset = 0
+    else:
+        y_shift_offset = random.randrange(int(-height_delta / 2), int(height_delta / 2))
 
     new_center_x = center[0] + x_shift_offset
     new_center_y = center[1] + y_shift_offset
@@ -54,6 +61,24 @@ def resize(image, point, new_size):
 
     return resized, new_point
 
+def flipImage(image, point, flip_horizontally, flip_vertically):
+    resulting_image = image
+    resulting_point = point
+
+    if flip_horizontally:
+        point_x = resulting_point[0]
+        width = image.size[0]
+        resulting_point = (width - point_x, resulting_point[1])
+        resulting_image = resulting_image.transpose(method=Image.FLIP_LEFT_RIGHT)
+
+    if flip_vertically:
+        point_y = resulting_point[1]
+        height = image.size[1]
+        resulting_point = (resulting_point[0], height - point_y)
+        resulting_image = resulting_image.transpose(method=Image.FLIP_TOP_BOTTOM)
+
+    return resulting_image, resulting_point
+
 
 class ZoomAndShiftTransform:
     def __init__(self, zoom_range=(1.0, 2.0)):
@@ -61,7 +86,7 @@ class ZoomAndShiftTransform:
 
     def __call__(self, satellite_img, point, drone_img, non_intersecting_satellite_images, satellite_img_contains_drone_img):
 
-        zoomed_image, point_on_zoomed_image = zoomAndOffset(satellite_img, point, random.randrange(self.zoom_range))
+        zoomed_image, point_on_zoomed_image = zoomAndOffset(satellite_img, point, random.uniform(self.zoom_range[0], self.zoom_range[1]))
 
         resized_image, point_on_resized_image = resize(zoomed_image, point_on_zoomed_image, (1280, 1180))
 
@@ -80,6 +105,7 @@ class ReplaceSatelliteImageTransform:
         else:
             return satellite_img, point, drone_img, satellite_img_contains_drone_img
 
+
 class MirrorTransform:
     def __init__(self, vertical_flip_chance, horizontal_flip_chance):
         self.vertical_flip_chance = vertical_flip_chance
@@ -87,14 +113,25 @@ class MirrorTransform:
 
     def __call__(self, satellite_img, point, drone_img, non_intersecting_satellite_images, satellite_img_contains_drone_img):
 
-        resulting_satellite_img = satellite_img
-        resulting_drone_img = drone_img
-        resulting_point = point
+        flip_horizontally = random.random() < self.horizontal_flip_chance
+        flip_vertically = random.random() < self.vertical_flip_chance
 
-        if random.random() < self.vertical_flip_chance:
-            
-
-        if random.random() < self.horizontal_flip_chance:
-
+        resulting_satellite_img, resulting_point = flipImage(satellite_img, point, flip_horizontally, flip_vertically)
+        resulting_drone_img = flipImage(drone_img, (0, 0), flip_horizontally, flip_vertically)[0]
 
         return resulting_satellite_img, resulting_point, resulting_drone_img, satellite_img_contains_drone_img
+
+class CustomPILToTensorTransform:
+    def __init__(self):
+        # Empty constructor
+        print("Empty constructor")
+
+    def __call__(self, satellite_img, point, drone_img, non_intersecting_satellite_images, satellite_img_contains_drone_img):
+
+        transform = torchvision.transforms.PILToTensor()
+
+        return \
+            transform(satellite_img.convert('RGB')),\
+                point,\
+                transform(drone_img.convert('RGB')), \
+                satellite_img_contains_drone_img
