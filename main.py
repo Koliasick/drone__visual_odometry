@@ -1,9 +1,11 @@
 from datasets import ImagesDataset
 import cv2
 from dataloaders import get_simple_data_loader
+from augmentations import ZoomAndShiftTransform
 
 
-dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Dataset")
+dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Dataset",
+                        transforms=[ZoomAndShiftTransform((1.0, 2.0))])
 
 data_loader = get_simple_data_loader(dataset)
 

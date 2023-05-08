@@ -3,6 +3,8 @@ import pandas as pd
 import paths
 import os
 import cv2
+import numpy as np
+from PIL import Image
 
 
 class ImagesDataset(torch.utils.data.Dataset):
@@ -71,7 +73,6 @@ class ImagesDataset(torch.utils.data.Dataset):
             non_intersecting_images_zoomed_out_part_1_2_file_names, \
             non_intersecting_images_zoomed_out_part_3_4_file_names
 
-
     def _get_part_of_dataset(self, base_path, dataset_part):
         zoomed_in_path = os.path.join(base_path, dataset_part, paths.satellite_zoomed_in_path)
         zoomed_out_path = os.path.join(base_path, dataset_part, paths.satellite_zoomed_out_path)
@@ -98,14 +99,14 @@ class ImagesDataset(torch.utils.data.Dataset):
                     "zoomed_in": {
                         "image": zoomed_in_satellite_image_path,
                         "non_intersecting_images": non_intersecting_images_zoomed_in_part_1_2_file_names
-                            if dataset_part == paths.part_one_path or dataset_part == paths.part_two_path
-                            else non_intersecting_images_zoomed_in_part_3_4_file_names
+                        if dataset_part == paths.part_one_path or dataset_part == paths.part_two_path
+                        else non_intersecting_images_zoomed_in_part_3_4_file_names
                     },
                     "zoomed_out": {
                         "image": zoomed_out_satellite_image_path,
                         "non_intersecting_images": non_intersecting_images_zoomed_out_part_1_2_file_names
-                            if dataset_part == paths.part_one_path or dataset_part == paths.part_two_path
-                            else non_intersecting_images_zoomed_out_part_3_4_file_names
+                        if dataset_part == paths.part_one_path or dataset_part == paths.part_two_path
+                        else non_intersecting_images_zoomed_out_part_3_4_file_names
                     }
                 })
 
@@ -116,18 +117,35 @@ class ImagesDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # Apply transforms and other augmentation here
-        if self.transforms is None:
-            result = {
-                "drone_image": cv2.resize(cv2.imread(self.items[idx]["drone_image"]), (500, 500)),
-                "satellite_image": cv2.imread(self.items[idx]["zoomed_in"]["image"]),
-                "satellite_image_contains_drone_image": True,
-                "drone_on_satellite_coordinates": {
-                    "x": 640,
-                    "y": 640
-                }
+        result = {
+            "drone_image": Image.open(self.items[idx]["drone_image"]).resize((500, 500)),
+            "satellite_image": Image.open(self.items[idx]["zoomed_in"]["image"]),
+            "satellite_image_contains_drone_image": True,
+            "drone_on_satellite_coordinates": {
+                "x": 640,
+                "y": 640
             }
+        }
+        if self.transforms is None:
+            print("No transforms are being applied")
         else:
-            raise Exception("Transforms are not implemented yet")
+            for transform in self.transforms:
+                transformed_satellite_img, \
+                    transformed_point, \
+                    transformed_drone_image, \
+                    satellite_image_contains_drone_image = transform(
+                        result["satellite_image"],
+                        (result["drone_on_satellite_coordinates"]["x"], result["drone_on_satellite_coordinates"]["y"]),
+                        result["drone_image"],
+                        self.items[idx]["zoomed_in"]["non_intersecting_images"],
+                        result["satellite_image_contains_drone_image"]
+                )
+
+                result["drone_image"] = transformed_drone_image
+                result["satellite_image"] = transformed_satellite_img
+                result["satellite_image_contains_drone_image"] = satellite_image_contains_drone_image
+                result["drone_on_satellite_coordinates"]["x"] = transformed_point[0]
+                result["drone_on_satellite_coordinates"]["y"] = transformed_point[1]
 
         # Should return
         #   1. Drone image
