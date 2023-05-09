@@ -12,7 +12,7 @@ dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Data
                             ReplaceSatelliteImageTransform(0.33),
                             MirrorTransform(0.25, 0.25),
                             ZoomAndShiftTransform((1.0, 2.0)),
-                            ResizeImages((400, 400)),
+                            ResizeImages((600, 600)),
                             CustomPILToTensorTransform()
                         ])
 
@@ -28,6 +28,8 @@ num_epochs = 10
 
 for epoch in range(num_epochs):
     model.train()
+
+    cumulative_loss = 0
 
     # Iterate over the training data in batches
     for i_batch, sample_batched in enumerate(data_loader):
@@ -53,9 +55,12 @@ for epoch in range(num_epochs):
 
         optimizer.step()
 
+        cumulative_loss += loss
+
         print(f"Processed batch: {i_batch}, Loss: {loss}")
 
     # Print the loss for this epoch
-    print('Epoch [{}/{}]'
-          .format(epoch+1, num_epochs))
+    print('Epoch [{}/{}], loss: {}'
+          .format(epoch+1, num_epochs, cumulative_loss/i_batch))
 
+torch.save(model.state_dict(), "Initial save")

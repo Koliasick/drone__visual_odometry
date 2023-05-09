@@ -19,8 +19,8 @@ def inside_image_loss(pred, target):
     loss_inside = F.mse_loss(pred_inside, target_inside) * 1000
 
     # Calculate the mean squared error loss for the x and y coordinates
-    loss_x = F.l1_loss(pred_x, target_x * pred_inside)
-    loss_y = F.l1_loss(pred_y, target_y * pred_inside)
+    loss_x = F.l1_loss(pred_x * pred_inside, target_x * pred_inside)
+    loss_y = F.l1_loss(pred_y * pred_inside, target_y * pred_inside)
 
     # Calculate the total loss as the sum of the individual losses
     loss = loss_inside + loss_x + loss_y
