@@ -147,6 +147,8 @@ class ImagesDataset(torch.utils.data.Dataset):
                 result["drone_on_satellite_coordinates"]["x"] = transformed_point[0]
                 result["drone_on_satellite_coordinates"]["y"] = transformed_point[1]
 
+        result["satellite_image_contains_drone_image"] = 1.0 if result["satellite_image_contains_drone_image"] else 0.0
+
         # Should return
         #   1. Drone image
         #   2. Satellite image

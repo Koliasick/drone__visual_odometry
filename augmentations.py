@@ -135,3 +135,15 @@ class CustomPILToTensorTransform:
                 point,\
                 transform(drone_img.convert('RGB')), \
                 satellite_img_contains_drone_img
+
+class ResizeImages:
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, satellite_img, point, drone_img, non_intersecting_satellite_images, satellite_img_contains_drone_img):
+
+        resized_satellite_img, transformed_point = resize(satellite_img, point, self.size)
+
+        resized_drone_img = resize(drone_img, (0, 0), self.size)[0]
+
+        return resized_satellite_img, transformed_point, resized_drone_img, satellite_img_contains_drone_img
