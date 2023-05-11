@@ -10,7 +10,7 @@ dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Data
                         transforms=[
                             ReplaceSatelliteImageTransform(0.33),
                             MirrorTransform(0.25, 0.25),
-                            ZoomAndShiftTransform((1.0, 2.0)),
+                            ZoomAndShiftTransform((1.0, 1.5)),
                             ResizeImages((600, 600)),
                             CustomPILToTensorTransform()
                         ])
@@ -21,9 +21,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = DroneSatelliteModelAttempt2().to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 35
+num_epochs = 10
 
 for epoch in range(num_epochs):
     model.train()

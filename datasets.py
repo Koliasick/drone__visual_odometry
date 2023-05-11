@@ -14,13 +14,13 @@ class ImagesDataset(torch.utils.data.Dataset):
 
         part_one = self._get_part_of_dataset(base_path, paths.part_one_path)
         part_two = self._get_part_of_dataset(base_path, paths.part_two_path)
-        part_three = self._get_part_of_dataset(base_path, paths.part_three_path)
-        part_four = self._get_part_of_dataset(base_path, paths.part_four_path)
+        #part_three = self._get_part_of_dataset(base_path, paths.part_three_path)
+        #part_four = self._get_part_of_dataset(base_path, paths.part_four_path)
 
         self.items.extend(part_one)
         self.items.extend(part_two)
-        self.items.extend(part_three)
-        self.items.extend(part_four)
+        #self.items.extend(part_three)
+        #self.items.extend(part_four)
 
     def _get_non_intersecting_images_path(self, base_non_intersecting_path, satellite_zoom_level_path, part_path):
 
@@ -119,7 +119,7 @@ class ImagesDataset(torch.utils.data.Dataset):
         # Apply transforms and other augmentation here
         result = {
             "drone_image": Image.open(self.items[idx]["drone_image"]).resize((500, 500)),
-            "satellite_image": Image.open(self.items[idx]["zoomed_in"]["image"]),
+            "satellite_image": Image.open(self.items[idx]["zoomed_in"]["image"]).crop((0, 0, 1180, 1180)),
             "satellite_image_contains_drone_image": True,
             "drone_on_satellite_coordinates": {
                 "x": 640,

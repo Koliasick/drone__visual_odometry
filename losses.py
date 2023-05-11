@@ -1,4 +1,5 @@
 import torch.nn.functional as F
+import torch
 
 
 def inside_image_loss(pred, target):
@@ -16,11 +17,11 @@ def inside_image_loss(pred, target):
     target_y = target[:, 2]
 
     # Calculate the binary cross-entropy loss for the "inside" prediction
-    loss_inside = F.mse_loss(pred_inside, target_inside) * 1000
+    loss_inside = torch.sqrt(F.mse_loss(pred_inside, target_inside)) * 1000
 
     # Calculate the mean squared error loss for the x and y coordinates
-    loss_x = F.l1_loss(pred_x * pred_inside, target_x * pred_inside)
-    loss_y = F.l1_loss(pred_y * pred_inside, target_y * pred_inside)
+    loss_x = torch.sqrt(F.mse_loss(pred_x * pred_inside, target_x * pred_inside))
+    loss_y = torch.sqrt(F.mse_loss(pred_y * pred_inside, target_y * pred_inside))
 
     # Calculate the total loss as the sum of the individual losses
     loss = loss_inside + loss_x + loss_y
