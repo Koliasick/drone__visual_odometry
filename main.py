@@ -1,9 +1,8 @@
 from datasets import ImagesDataset
 from dataloaders import get_simple_data_loader
 from augmentations import ZoomAndShiftTransform, ReplaceSatelliteImageTransform, MirrorTransform, CustomPILToTensorTransform, ResizeImages
-from torchvision import transforms
 import torch
-from networks import ResNetModified
+from networks import ResNetModified, DroneSatelliteModelAttempt2
 from losses import inside_image_loss
 
 
@@ -20,11 +19,11 @@ data_loader = get_simple_data_loader(dataset)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = ResNetModified().to(device)
+model = DroneSatelliteModelAttempt2().to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.007)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
 
-num_epochs = 10
+num_epochs = 35
 
 for epoch in range(num_epochs):
     model.train()
