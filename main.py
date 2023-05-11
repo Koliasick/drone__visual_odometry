@@ -1,16 +1,19 @@
+from PIL import ImageDraw
 from datasets import ImagesDataset
 from dataloaders import get_simple_data_loader
 from augmentations import ZoomAndShiftTransform, ReplaceSatelliteImageTransform, MirrorTransform, CustomPILToTensorTransform, ResizeImages
 import torch
 from networks import ResNetModified, DroneSatelliteModelAttempt2
 from losses import inside_image_loss
+from torchvision.transforms.functional import to_pil_image
+import matplotlib.pyplot as plt
 
 
 dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Dataset",
                         transforms=[
                             ReplaceSatelliteImageTransform(0.33),
                             MirrorTransform(0.25, 0.25),
-                            ZoomAndShiftTransform((1.0, 1.5)),
+                            ZoomAndShiftTransform((1.0, 1.9)),
                             ResizeImages((600, 600)),
                             CustomPILToTensorTransform()
                         ])
@@ -32,6 +35,27 @@ for epoch in range(num_epochs):
 
     # Iterate over the training data in batches
     for i_batch, sample_batched in enumerate(data_loader):
+
+        ##########################
+
+        for i in range(32):
+            if(sample_batched["satellite_image_contains_drone_image"][i] == 1):
+                drone_img = to_pil_image(sample_batched["drone_image"][i])
+                satellite_image = to_pil_image(sample_batched["satellite_image"][i])
+
+                point = sample_batched["drone_on_satellite_coordinates"]["x"][i], sample_batched["drone_on_satellite_coordinates"]["y"][i]
+
+                draw = ImageDraw.Draw(satellite_image)
+                draw.ellipse((point[0]-2, point[1]-2, point[0]+2, point[1]+2), fill='red')
+
+                fig, (ax1, ax2) = plt.subplots(1, 2)
+
+                ax1.imshow(satellite_image)
+                ax2.imshow(drone_img)
+
+                plt.show()
+
+        #########################
 
         input_data = torch.cat([sample_batched["drone_image"], sample_batched["satellite_image"]], dim=1)
         input_data = input_data.type(torch.float)
