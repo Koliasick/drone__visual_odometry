@@ -1,6 +1,7 @@
 import torch
 import torchvision.models as models
 from torch import nn
+from torchvision.models import ResNet18_Weights
 
 
 class ResNetModified(torch.nn.Module):
@@ -56,50 +57,39 @@ class DroneSatelliteModelAttempt2(nn.Module):
         return torch.cat((c, coordinates), dim=1)
 
 
-class DroneSatelliteModelAttempt2ParallelConvolutionalLayers(nn.Module):
+class DualResnetModel(nn.Module):
     def __init__(self):
-        super(DroneSatelliteModelAttempt2, self).__init__()
+        super(DualResnetModel, self).__init__()
         # Convolutional layers
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
-        self.bn2 = nn.BatchNorm2d(32)
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.bn3 = nn.BatchNorm2d(64)
-        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv4 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.bn4 = nn.BatchNorm2d(128)
-        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Convolutional big
+        self.resnet1 = models.resnet18(pretrained=True)
+
+        # Freeze the convolutional layers
+        #for param in self.resnet1.parameters():
+        #    param.requires_grad = False
+
+        in_ft = self.resnet1.fc.in_features
+        self.resnet1.fc = torch.nn.Identity()
+
+        # Convolutional small
+        self.resnet2 = models.resnet18(pretrained=True)
+
+        # Freeze the convolutional layers
+        #for param in self.resnet2.parameters():
+        #    param.requires_grad = False
+
+        self.resnet2.fc = torch.nn.Identity()
+
         # Fully connected layers
-        self.fc1 = nn.Linear(128 * 37 * 37, 256)
-        self.bn5 = nn.BatchNorm1d(256)
-        self.fc2 = nn.Linear(256, 64)
-        self.bn6 = nn.BatchNorm1d(64)
-        # Output layers
-        self.classifier = nn.Linear(64, 1)
-        self.regressor = nn.Linear(64, 2)
+        self.lay1 = nn.Linear(in_ft * 2, 1000)
+        self.relu = nn.ReLU()
+        self.lay2 = nn.Linear(1000, 3)
 
     def forward(self, x):
         drone_image, satellite_image = torch.split(x, [3, 3], dim=1)
-
-        x = self.pool1(self.bn1(nn.functional.relu(self.conv1(drone_image))))
-        x = self.pool2(self.bn2(nn.functional.relu(self.conv2(x))))
-        x = self.pool3(self.bn3(nn.functional.relu(self.conv3(x))))
-        x = self.pool4(self.bn4(nn.functional.relu(self.conv4(x))))
-        x = x.view(-1, 128 * 37 * 37)
-
-        y = self.pool1(self.bn1(nn.functional.relu(self.conv1(satellite_image))))
-        y = self.pool2(self.bn2(nn.functional.relu(self.conv2(y))))
-        y = self.pool3(self.bn3(nn.functional.relu(self.conv3(y))))
-        y = self.pool4(self.bn4(nn.functional.relu(self.conv4(y))))
-        y = y.view(-1, 128 * 37 * 37)
-
-        fco = torch.cat((x, y), dim=1)
-
-        fco = self.bn5(nn.functional.relu(self.fc1(fco)))
-        fco = self.bn6(nn.functional.relu(self.fc2(fco)))
-        c = torch.sigmoid(self.classifier(fco))
-        coordinates = self.regressor(fco)
-        return torch.cat((c, coordinates), dim=1)
+        bg = self.resnet1(satellite_image)
+        sm = self.resnet2(drone_image)
+        fc_input = torch.cat((sm, bg), dim=1)
+        res = self.lay2(self.relu(self.lay1(fc_input)))
+        return res

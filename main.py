@@ -3,60 +3,37 @@ from datasets import ImagesDataset
 from dataloaders import get_simple_data_loader
 from augmentations import ZoomAndShiftTransform, ReplaceSatelliteImageTransform, MirrorTransform, CustomPILToTensorTransform, ResizeImages
 import torch
-from networks import ResNetModified, DroneSatelliteModelAttempt2
+from networks import DualResnetModel
 from losses import inside_image_loss
-from torchvision.transforms.functional import to_pil_image
-import matplotlib.pyplot as plt
 
-
-dataset = ImagesDataset("C:\\Users\\Admin\\Desktop\\drone__visual_odometry\\Dataset",
-                        transforms=[
-                            ReplaceSatelliteImageTransform(0.33),
-                            MirrorTransform(0.25, 0.25),
-                            ZoomAndShiftTransform((1.0, 1.9)),
-                            ResizeImages((600, 600)),
-                            CustomPILToTensorTransform()
-                        ])
+dataset = ImagesDataset("C:/Users/Admin/Desktop/drone__visual_odometry/Dataset",
+                       transforms=[
+                           ReplaceSatelliteImageTransform(0.33),
+                           MirrorTransform(0.25, 0.25),
+                           ZoomAndShiftTransform((1.0, 1.9)),
+                           ResizeImages((600, 600)),
+                           CustomPILToTensorTransform()
+                       ])
 
 data_loader = get_simple_data_loader(dataset)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = DroneSatelliteModelAttempt2().to(device)
+model = DualResnetModel().to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.00005)
 
-num_epochs = 10
+num_epochs = 8
 
 for epoch in range(num_epochs):
     model.train()
 
     cumulative_loss = 0
 
+    cumulative_accuracy = 0
+
     # Iterate over the training data in batches
     for i_batch, sample_batched in enumerate(data_loader):
-
-        ##########################
-
-        for i in range(32):
-            if(sample_batched["satellite_image_contains_drone_image"][i] == 1):
-                drone_img = to_pil_image(sample_batched["drone_image"][i])
-                satellite_image = to_pil_image(sample_batched["satellite_image"][i])
-
-                point = sample_batched["drone_on_satellite_coordinates"]["x"][i], sample_batched["drone_on_satellite_coordinates"]["y"][i]
-
-                draw = ImageDraw.Draw(satellite_image)
-                draw.ellipse((point[0]-2, point[1]-2, point[0]+2, point[1]+2), fill='red')
-
-                fig, (ax1, ax2) = plt.subplots(1, 2)
-
-                ax1.imshow(satellite_image)
-                ax2.imshow(drone_img)
-
-                plt.show()
-
-        #########################
-
         input_data = torch.cat([sample_batched["drone_image"], sample_batched["satellite_image"]], dim=1)
         input_data = input_data.type(torch.float)
 
@@ -72,6 +49,14 @@ for epoch in range(num_epochs):
 
         output_data = model(input_data)
 
+        prediction_exists = output_data[:, [0]]
+        real_exists = target_data[:, [0]]
+
+        binary_pred = (prediction_exists > 0.5)
+        correct = torch.sum(binary_pred == real_exists)
+
+        cumulative_accuracy += float(correct) / float(len(real_exists))
+
         loss = inside_image_loss(output_data, target_data)
 
         loss.backward()
@@ -80,10 +65,8 @@ for epoch in range(num_epochs):
 
         cumulative_loss += loss
 
-        print(f"Processed batch: {i_batch}, Loss: {loss}")
-
     # Print the loss for this epoch
-    print('Epoch [{}/{}], loss: {}'
-          .format(epoch+1, num_epochs, cumulative_loss/i_batch))
+    print('Epoch [{}/{}], loss: {}, accuracy: {}'
+          .format(epoch + 1, num_epochs, cumulative_loss / (i_batch + 1), cumulative_accuracy / (i_batch + 1)))
 
 torch.save(model.state_dict(), "Initial save")

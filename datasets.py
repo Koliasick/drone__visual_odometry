@@ -2,8 +2,6 @@ import torch
 import pandas as pd
 import paths
 import os
-import cv2
-import numpy as np
 from PIL import Image
 
 
@@ -14,13 +12,13 @@ class ImagesDataset(torch.utils.data.Dataset):
 
         part_one = self._get_part_of_dataset(base_path, paths.part_one_path)
         part_two = self._get_part_of_dataset(base_path, paths.part_two_path)
-        #part_three = self._get_part_of_dataset(base_path, paths.part_three_path)
-        #part_four = self._get_part_of_dataset(base_path, paths.part_four_path)
+        part_three = self._get_part_of_dataset(base_path, paths.part_three_path)
+        part_four = self._get_part_of_dataset(base_path, paths.part_four_path)
 
         self.items.extend(part_one)
         self.items.extend(part_two)
-        #self.items.extend(part_three)
-        #self.items.extend(part_four)
+        self.items.extend(part_three)
+        self.items.extend(part_four)
 
     def _get_non_intersecting_images_path(self, base_non_intersecting_path, satellite_zoom_level_path, part_path):
 

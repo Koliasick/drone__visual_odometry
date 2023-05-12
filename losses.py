@@ -16,14 +16,14 @@ def inside_image_loss(pred, target):
     target_x = target[:, 1]
     target_y = target[:, 2]
 
-    # Calculate the binary cross-entropy loss for the "inside" prediction
-    loss_inside = torch.sqrt(F.mse_loss(pred_inside, target_inside)) * 1000
+    # Calculate the RMSE loss for the "inside" prediction
+    loss_inside = torch.sqrt(F.mse_loss(pred_inside, target_inside))
 
-    # Calculate the mean squared error loss for the x and y coordinates
-    #loss_x = torch.sqrt(F.mse_loss(pred_x * pred_inside, target_x * pred_inside))
-    #loss_y = torch.sqrt(F.mse_loss(pred_y * pred_inside, target_y * pred_inside))
+    # Calculate the RMSE loss for the x and y coordinates, and make it so when
+    loss_x = torch.sqrt(F.mse_loss(pred_x / 600 * target_inside, target_x / 600 * target_inside))
+    loss_y = torch.sqrt(F.mse_loss(pred_y / 600 * target_inside, target_y / 600 * target_inside))
 
     # Calculate the total loss as the sum of the individual losses
-    loss = loss_inside# + loss_x + loss_y
+    loss = loss_inside + loss_x + loss_y
 
     return loss

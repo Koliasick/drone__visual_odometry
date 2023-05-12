@@ -122,9 +122,6 @@ class MirrorTransform:
         return resulting_satellite_img, resulting_point, resulting_drone_img, satellite_img_contains_drone_img
 
 class CustomPILToTensorTransform:
-    def __init__(self):
-        # Empty constructor
-        print("Empty constructor")
 
     def __call__(self, satellite_img, point, drone_img, non_intersecting_satellite_images, satellite_img_contains_drone_img):
 
