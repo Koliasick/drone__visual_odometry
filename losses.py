@@ -19,7 +19,7 @@ def inside_image_loss(pred, target):
     # Calculate the RMSE loss for the "inside" prediction
     loss_inside = torch.sqrt(F.mse_loss(pred_inside, target_inside))
 
-    # Calculate the RMSE loss for the x and y coordinates, and make it so when
+    # Calculate the RMSE loss for the x and y coordinates, and make it so when target_inside is 0 loss_x and loss_y is 0
     loss_x = torch.sqrt(F.mse_loss(pred_x / 600 * target_inside, target_x / 600 * target_inside))
     loss_y = torch.sqrt(F.mse_loss(pred_y / 600 * target_inside, target_y / 600 * target_inside))
 

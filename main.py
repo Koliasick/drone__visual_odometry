@@ -1,4 +1,4 @@
-from PIL import ImageDraw
+from torch.utils.data import random_split, ConcatDataset
 from datasets import ImagesDataset
 from dataloaders import get_simple_data_loader
 from augmentations import ZoomAndShiftTransform, ReplaceSatelliteImageTransform, MirrorTransform, CustomPILToTensorTransform, ResizeImages
@@ -64,6 +64,8 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         cumulative_loss += loss
+
+        print("Batch evaluation completed")
 
     # Print the loss for this epoch
     print('Epoch [{}/{}], loss: {}, accuracy: {}'
